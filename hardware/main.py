@@ -9,15 +9,21 @@ from ev3dev2.sound import Sound
 from ev3dev2.display import Display
 from ev3dev2.console import Console
 
-URL = "http://localhost:3000"
+URL = "http://35.230.20.197:5000" or "http://bobafetch.me:5000"
 
 console = Console()
 console.set_font("Lat15-TerminusBold16.psf.gz", True)
 
-mid_col = console.columns // 2
-mid_row = console.rows // 2
+# mid_col = console.columns // 2
+# mid_row = console.rows // 2
+mid_col = 1
+mid_row = 1
+alignment="L"
 
 def main():
+    console.text_at(
+        "Mindstorms is running", column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+    )
     while True:
         sleep(1)
 
@@ -26,7 +32,7 @@ def main():
 
         if not len(res):
             console.text_at(
-                "Queue is empty", column=mid_col, row=mid_row, alignment="C"
+                "Queue is empty", column=mid_col, row=mid_row, alignment=alignment, reset_console=True
             )
             continue
 
@@ -35,7 +41,7 @@ def main():
 
 def make_drink(order, length):
     _id = order["_id"]
-    name = order["options"]["name"]
+    name = order["name"]
     tea = order["options"]["tea"]
     sugar = order["options"]["sugar"]
     ice = order["options"]["ice"]
@@ -46,23 +52,34 @@ def make_drink(order, length):
         + "\n"
         + tea
         + " "
-        + sugar
+        + str(sugar)
         + "%"
         + " "
-        + ice
+        + str(ice)
         + "%"
         + "\nQueue Size: "
-        + length,
+        + str(length),
         column=mid_col,
         row=mid_row,
-        alignment="C",
+        alignment=alignment,
+        reset_console=True
     )
 
     m = LargeMotor(OUTPUT_A)
     m.on_for_rotations(SpeedPercent(75), 5)
 
+    s = name + ", your boba drink is finished. Please come pick it up"
+
+    console.text_at(
+        s, 
+        column=mid_col,
+        row=mid_row,
+        alignment=alignment,
+        reset_console=True
+    ) 
+
     sound = Sound()
-    sound.speak("Your boba drink is finished!")
+    sound.speak(s)
 
     requests.patch(URL + "/queue/" + _id, json={})
 

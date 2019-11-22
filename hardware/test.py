@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
 from ev3dev2.motor import LargeMotor, OUTPUT_A, SpeedPercent
-from ev3dev2.sound import Sound
-
 from time import sleep
 
-import requests
-
-url = 'http://5aaacbd4.ngrok.io'
-
+print("running")
+m = LargeMotor(OUTPUT_A)
+# while(True):
+#     m.run_forever()
+# m.on_for_rotations(SpeedPercent(75), 100)
+# m.speed_sp = 1000
+m.run_forever(speed_sp=1000)
+# m.on(100)
 while True:
-    r = requests.get(url+'/state')
-    res = r.json()
-    if(res['state']==1):
-        m = LargeMotor(OUTPUT_A)
-        m.on_for_rotations(SpeedPercent(75), 5)
+    pass
 
-        sound = Sound()
-        sound.speak('Your boba drink is finished!')
-        
-        requests.post(url+'/state', json={ 'state': 0 })
-
-    sleep(1)
+print("ending")
