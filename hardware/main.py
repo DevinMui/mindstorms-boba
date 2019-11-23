@@ -19,11 +19,16 @@ console.set_font("Lat15-TerminusBold16.psf.gz", True)
 # mid_row = console.rows // 2
 mid_col = 1
 mid_row = 1
-alignment="L"
+alignment = "L"
+
 
 def main():
     console.text_at(
-        "Mindstorms is running", column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+        "Mindstorms is running",
+        column=mid_col,
+        row=mid_row,
+        alignment=alignment,
+        reset_console=True,
     )
     while True:
         sleep(1)
@@ -33,7 +38,11 @@ def main():
 
         if not len(res):
             console.text_at(
-                "Queue is empty", column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+                "Queue is empty",
+                column=mid_col,
+                row=mid_row,
+                alignment=alignment,
+                reset_console=True,
             )
             continue
 
@@ -63,17 +72,17 @@ def make_drink(order, length):
         column=mid_col,
         row=mid_row,
         alignment=alignment,
-        reset_console=True
+        reset_console=True,
     )
 
     sound = Sound()
-    sound.speak('Dispensing boba')
+    sound.speak("Dispensing boba")
 
     # dispense boba
     m = LargeMotor(OUTPUT_B)
     m.on_for_rotations(SpeedPercent(75), 10)
 
-    sound.speak('Dispensing ' + tea)
+    sound.speak("Dispensing " + tea)
 
     # dispense liquid
     m = LargeMotor(OUTPUT_A)
@@ -84,16 +93,13 @@ def make_drink(order, length):
     s = name + ", your boba drink is finished. Please come pick it up"
 
     console.text_at(
-        s, 
-        column=mid_col,
-        row=mid_row,
-        alignment=alignment,
-        reset_console=True
-    ) 
+        s, column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+    )
 
     sound.speak(s)
 
     requests.patch(URL + "/queue/" + _id, json={})
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
