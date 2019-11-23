@@ -6,8 +6,9 @@ from time import sleep
 
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, SpeedPercent
 from ev3dev2.sound import Sound
-from ev3dev2.display import Display
 from ev3dev2.console import Console
+
+from agt import AlexaGadget
 
 URL = "http://35.230.20.197:5000" or "http://bobafetch.me:5000"
 
