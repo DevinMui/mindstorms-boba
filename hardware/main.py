@@ -1,111 +1,116 @@
 #!/usr/bin/env python3
+import os
+import json
+import sys
 
-import argparse
-import requests
+from agt import AlexaGadget
 from time import sleep
 
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_B, SpeedPercent
+from ev3dev2.led import Leds
 from ev3dev2.sound import Sound
 from ev3dev2.console import Console
 
-from agt import AlexaGadget
+class MindstormsGadget(AlexaGadget):
+    def __init__(self):
+        super().__init__(gadget_config_path='./auth.ini')
 
-URL = "http://35.230.20.197:5000" or "http://bobafetch.me:5000"
+        self.leds = Leds()
+        self.sound = Sound()
+        self.console = Console()
+        self.console.set_font("Lat15-TerminusBold16.psf.gz", True)
 
-console = Console()
-console.set_font("Lat15-TerminusBold16.psf.gz", True)
+        self.dispense_motor = LargeMotor(OUTPUT_A)
+        self.pump_motor = LargeMotor(OUTPUT_B)
 
-# mid_col = console.columns // 2
-# mid_row = console.rows // 2
-mid_col = 1
-mid_row = 1
-alignment = "L"
+        # Start threads
+        # threading.Thread(target=self._patrol_thread, daemon=True).start()
 
+    def on_connected(self, device_addr):
+        self.leds.set_color("LEFT", "GREEN")
+        self.leds.set_color("RIGHT", "GREEN")
+        self.sound.play_song((('C4', 'e'), ('D4', 'e'), ('E5', 'q')))
 
-def main():
-    console.text_at(
-        "Mindstorms is running",
-        column=mid_col,
-        row=mid_row,
-        alignment=alignment,
-        reset_console=True,
-    )
-    while True:
-        sleep(1)
+    def on_disconnected(self, device_addr):
+        self.leds.set_color("LEFT", "BLACK")
+        self.leds.set_color("RIGHT", "BLACK")
 
-        res = requests.get(URL + "/queue")
-        res = res.json()
+    def on_custom_mindstorms_gadget_control(self, directive):
+        try:
+            payload = json.loads(directive.payload.decode("utf-8"))
+            print("Control payload: {}".format(payload), file=sys.stderr)
+            control_type = payload["type"]
 
-        if not len(res):
-            console.text_at(
-                "Queue is empty",
-                column=mid_col,
-                row=mid_row,
-                alignment=alignment,
-                reset_console=True,
-            )
-            continue
+            # regular voice commands
+            if control_type == "automatic":
+                self._make()
+            
+            # series of voice commands
+            elif control_type == "manual": # Expected params: [command] 
+                control_command = payload["command"]
 
-        make_drink(res[0], len(res))
+                if control_command == "dispense":
+                    self._dispense()
 
+                elif control_command == "pour":
+                    self._pour()
 
-def make_drink(order, length):
-    _id = order["_id"]
-    name = order["name"]
-    tea = order["options"]["tea"]
-    sugar = order["options"]["sugar"]
-    ice = order["options"]["ice"]
+        except KeyError:
+            print("Missing expected parameters: {}".format(directive), file=sys.stderr)
+    
+    def _make(self, options=None):
+        self.sound.speak("Dispensing boba")
 
-    console.text_at(
-        "Making Order for "
-        + name
-        + "\n"
-        + tea
-        + " "
-        + str(sugar)
-        + "%"
-        + " "
-        + str(ice)
-        + "%"
-        + "\nQueue Size: "
-        + str(length),
-        column=mid_col,
-        row=mid_row,
-        alignment=alignment,
-        reset_console=True,
-    )
+        # dispense boba
 
-    sound = Sound()
-    sound.speak("Dispensing boba")
+        # sound.speak("Dispensing " + tea)
 
-    # dispense boba
-    m = LargeMotor(OUTPUT_B)
-    m.on_for_rotations(SpeedPercent(75), 10)
+        # dispense liquid
+        self._pour(10)
 
-    sound.speak("Dispensing " + tea)
+        # s = name + ", your boba drink is finished. Please come pick it up"
+
+        # console.text_at(
+        #     s, column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+        # )
+
+        # sound.speak(s)
 
     # dispense liquid
-    m = LargeMotor(OUTPUT_A)
-    m.run_forever(speed_sp=1000)
-    sleep(10)
-    m.stop()
+    def _pour(self, time_in_s=10):
+        self.dispense_motor.run_forever(speed_sp=1000)
+        sleep(time_in_s)
+        self.pump_motor.stop()
 
-    s = name + ", your boba drink is finished. Please come pick it up"
+    # dispense boba
+    def _dispense(self, cycles=10):
+        # ensure the dispenser resets to the correct position everytime
+        if cycles % 2:
+            cycles += 1
 
-    console.text_at(
-        s, column=mid_col, row=mid_row, alignment=alignment, reset_console=True
-    )
+        # agitate the boba to make it fall
+        for _ in range(cycles):
+            deg = 45 if cycles % 2 else -45
+            self.dispense_motor.on_for_degrees(SpeedPercent(75), deg)
+            sleep(0.5)
 
-    sound.speak(s)
+if __name__ == '__main__':
 
-    requests.patch(URL + "/queue/" + _id, json={})
+    gadget = MindstormsGadget()
 
+    # Set LCD font and turn off blinking LEDs
+    os.system('setfont Lat7-Terminus12x6')
+    gadget.leds.set_color("LEFT", "BLACK")
+    gadget.leds.set_color("RIGHT", "BLACK")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run a script to listen for order queue updates."
-    )
-    parser.add_argument("--url", default=URL, help="URL to listen on.")
-    args = parser.parse_args()
-    URL = args.url
-    main()
+    # Startup sequence
+    gadget.sound.play_song((('C4', 'e'), ('D4', 'e'), ('E5', 'q')))
+    gadget.leds.set_color("LEFT", "GREEN")
+    gadget.leds.set_color("RIGHT", "GREEN")
+
+    # Gadget main entry point
+    gadget.main()
+
+    # Shutdown sequence
+    gadget.leds.set_color("LEFT", "BLACK")
+    gadget.leds.set_color("RIGHT", "BLACK")
