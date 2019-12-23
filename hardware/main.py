@@ -120,9 +120,9 @@ class MindstormsGadget(AlexaGadget):
 
         # mid_col = console.columns // 2
         # mid_row = console.rows // 2
-        mid_col = 1
-        mid_row = 1
-        alignment = "L"
+        # mid_col = 1
+        # mid_row = 1
+        # alignment = "L"
 
         process = self.sound.play_file('mega.wav', 100, Sound.PLAY_NO_WAIT_FOR_COMPLETE)
 
@@ -132,14 +132,15 @@ class MindstormsGadget(AlexaGadget):
         # dispense liquid
         self._pour(tea=tea)
 
-        s = name + ", your " + tea + " with " + str(sugar) + " percent sugar and " + str(ice) + " percent ice is finished. Please come pick it up!"
-
-        self.console.text_at(
-            s, column=mid_col, row=mid_row, alignment=alignment, reset_console=True
-        )
+        # self.console.text_at(
+        #     s, column=mid_col, row=mid_row, alignment=alignment, reset_console=True
+        # )
         # notify alexa that drink is finished
         payload = {
-            "speak": s
+            "name": name,
+            "tea": tea,
+            "sugar": sugar,
+            "ice": ice,
         }
         self._send_event("DONE", payload)
 
